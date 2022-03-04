@@ -1,10 +1,9 @@
 import clsx from 'clsx';
 import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { addZero } from '../../lib/utils';
 import { selectDateStart, start, stop } from '../../redux/recorder';
 import './Recorder.css';
-
-const addZero = (num: number) => (num < 10 ? `0${num}` : `${num}`);
 
 const Recorder = () => {
   const [, setCount] = useState<number>(0);
@@ -16,8 +15,8 @@ const Recorder = () => {
 
   const handleClick = () => {
     if (started) {
-      window.clearInterval(interval.current)
-      dispatch(stop())
+      window.clearInterval(interval.current);
+      dispatch(stop());
     } else {
       dispatch(start());
       interval.current = window.setInterval(() => {
