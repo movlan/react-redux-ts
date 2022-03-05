@@ -1,6 +1,7 @@
 import { RootState } from './store';
 import { Action } from 'redux';
 import { ThunkAction } from 'redux-thunk';
+import { selectDateStart } from './recorder';
 
 export interface UserEvent {
   id: number;
@@ -58,6 +59,50 @@ export const loadUserEvents =
     }
   };
 
+const CREATE_REQUEST = 'userEvents/create_request';
+interface CreateRequestAction extends Action<typeof CREATE_REQUEST> {}
+
+const CREATE_FAILURE = 'userEvents/create_failure';
+interface CreateFailureAction extends Action<typeof CREATE_FAILURE> {}
+
+const CREATE_SUCCESS = 'userEvents/create_success';
+interface CreateSuccesstAction extends Action<typeof CREATE_SUCCESS> {
+  payload: { event: UserEvent };
+}
+
+export const createUserEvent =
+  (): ThunkAction<
+    Promise<void>,
+    RootState,
+    undefined,
+    CreateRequestAction | CreateSuccesstAction | CreateFailureAction
+  > =>
+  async (dispatch, getState) => {
+    dispatch({ type: CREATE_REQUEST });
+    try {
+      const dateStart = selectDateStart(getState());
+      const event: Omit<UserEvent, 'id'> = {
+        title: 'No Name',
+        dateStart,
+        dateEnd: new Date().toISOString(),
+      };
+
+      const response = await fetch('http://localhost:3001/events', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(event),
+      });
+
+      const createdEvent: UserEvent = await response.json();
+
+      dispatch({ type: CREATE_SUCCESS, payload: { event: createdEvent } });
+    } catch (error) {
+      dispatch({ type: CREATE_FAILURE });
+    }
+  };
+
 const selectUserEventsState = (rootState: RootState) => rootState.userEvents;
 
 export const selectUserEventArray = (rootState: RootState) => {
@@ -72,11 +117,11 @@ const initialState: UserEventState = {
 
 const userEventsReducer = (
   state: UserEventState = initialState,
-  acton: LoadSuccessAction
+  action: LoadSuccessAction | CreateSuccesstAction
 ) => {
-  switch (acton.type) {
+  switch (action.type) {
     case LOAD_SUCCESS:
-      const { events } = acton.payload;
+      const { events } = action.payload;
       return {
         ...state,
         allIds: events.map(({ id }) => id),
@@ -84,6 +129,14 @@ const userEventsReducer = (
           byIds[events.id] = events;
           return byIds;
         }, {}),
+      };
+
+    case CREATE_SUCCESS:
+      const { event } = action.payload;
+      return {
+        ...state,
+        allIds: [...state.allIds, event.id],
+        byIds: { ...state.byIds, [event.id]: event },
       };
     default:
       return state;

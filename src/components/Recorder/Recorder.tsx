@@ -3,9 +3,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { addZero } from '../../lib/utils';
 import { selectDateStart, start, stop } from '../../redux/recorder';
+import { createUserEvent } from '../../redux/user-events';
 import './Recorder.css';
 
-const Recorder = () => {
+const Recorder: React.FC = () => {
   const [, setCount] = useState<number>(0);
   const dispatch = useDispatch();
 
@@ -16,6 +17,7 @@ const Recorder = () => {
   const handleClick = () => {
     if (started) {
       window.clearInterval(interval.current);
+      dispatch(createUserEvent());
       dispatch(stop());
     } else {
       dispatch(start());
